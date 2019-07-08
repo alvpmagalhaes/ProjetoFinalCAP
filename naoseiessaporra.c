@@ -171,9 +171,11 @@ void cria_arquivo(){
 
 void preenche_tabuleiro(int casas, int vetor[casas]){
     //CONTADORES
-    int i;
+    int i = 0;
 
     //PREENCHE O TABULEIRO
-    for(i = 0; i < casas; i++)
+    while(i < 9) {
         vetor[i] = 0;
+        i += 1;
+    }
 }
