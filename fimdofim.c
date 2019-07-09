@@ -20,13 +20,13 @@
 
 //FUNÇÕES E PROCEDIMENTOS UTILIZADOS NO PROGRAMA
 void cria_arquivo();
-void preenche_tabuleiro(int casas, int vetor[casas]);
+void preenche(int casas, int vetor[casas]);
 
 //PROGRAMA
 int main() {
 
     //MENSAGEM QUE SERÁ ENVIADA PARA O HTML COM O RESULTADO DE CADA ACONTECIMENTO
-    char resposta[515];
+    char resposta[50] = {'\n'};
 
     //CONTADORES
     int i, j;
@@ -40,30 +40,39 @@ int main() {
     int player = 0;   //JOGADOR DA VEZ
     int winner = 0;   //VENCEDOR
     int full = 0;     //SE O TABULEIRO ESTIVER COMPLETO
+    int score[2];     //VERIRIFCAR O PLACAR DE ROUNDS PARA CADA JOGADOR
 
     //VÁRIAVEL PARA UTILIZAR O ARQUIVO
     FILE *arquivo;
 
     //DECLARA O TABULEIRO EM FORMATO DE VETOR
     int tabuleiro[9];
-    //PREENCHE O TABULEIRO COM 0 'ZEROS' PARA INICIAR
-    preenche_tabuleiro(9, tabuleiro);
+    //PREENCHE O TABULEIRO E O SCORE COM 0 'ZEROS' PARA INICIAR
+    preenche(9, tabuleiro);
+    preenche(2, score);
 
     //ABRE O ARQUIVO
-    arquivo = fopen("JogoDaVelha.txt", "r+b");
+    arquivo = fopen("JogoDaVelha.bin", "r+b");
 
     //SE O ARQUIVO NÃO EXISTIR, ELE É CRIADO
     if(arquivo == NULL) {
         //CRIA O ARQUIVO E O PREENCHE COM AS INFORMAÇÕES DE JOGADA E COM O TABULEIRO
         cria_arquivo();
-        arquivo = fopen("JogoDaVelha.txt", "r+b");
+        arquivo = fopen("JogoDaVelha.bin", "w+b");
 
+        fwrite(score, 2, sizeof(int), arquivo);
         fwrite(&round, 1, sizeof(int), arquivo);
         fwrite(tabuleiro, 9, sizeof(int), arquivo);
     }
     else{
-        //SE O ARQUIVO JÁ EXISTIR, APENAS LÊ AS INFORMAÇÕES DO JOGO ATUAL
+        //SE O ARQUIVO JÁ EXISTIR, APENAS LÊ AS INFORMAÇÕES DO JOGO ATUAL UTILIZA FSEEKS PARA ASEGURAR A LOCALIZAÇÃO DO DADO
+        fseek(arquivo, 0, SEEK_SET);
+        fread(score, 2, sizeof(int), arquivo);
+
+        fseek(arquivo, 2* sizeof(int), SEEK_SET);
         fread(&player, 1, sizeof(int), arquivo);
+
+        fseek(arquivo, 3* sizeof(int), SEEK_SET);
         fread(tabuleiro, 9, sizeof(int), arquivo);
 
         //RECEBE OS DAOS DA URL
@@ -72,6 +81,13 @@ int main() {
         //RELATA SE HOUVER ALGUM ERRO
         if(dados == NULL)
             snprintf(resposta, sizeof resposta, "Erro na leitura da URL");
+        if(sscanf(dados, "casa=%d&round=%d", &casa, &round) != 2){
+            snprintf(resposta, sizeof resposta, "Zerou!!");
+            score[0] = 0;
+            score[1] = 0;
+            fseek(arquivo, 0, SEEK_SET);
+            fwrite(score, 2, sizeof(int), arquivo);
+        }
         else{
             //LÊ QUAL É O JOGADOR DA RODADA E JÁ FAZ A ALTERAÇÃO PARA A PRÓXIMA
             if(player==0 || player==2)
@@ -136,11 +152,16 @@ int main() {
             //JOGADOR 'O' GANHOU
             if(winner == 1){
                 snprintf(resposta, sizeof(resposta), "O - foi o vencedor desse round!!");
+                score[0] += 1;
             }
             //JOGADOR 'X' GANHOU
             if(winner == 2){
                 snprintf(resposta, sizeof(resposta), "X - foi o vencedor desse round!!");
+                score[1] += 1;
             }
+
+            fseek(arquivo, 0, SEEK_SET);
+            fwrite(score, 2, sizeof(int), arquivo);
         }
 
         //ZERA O TABULEIRO PARA A PROXIMA PARTIDA
@@ -160,38 +181,32 @@ int main() {
     printf("<html>");
         printf("<head>");
             printf("<meta charset=\"utf-8\">");
-            printf("<title>Jogo da velha - CGI + Arquivos</title>");
+            printf("<title>Jogo da velha</title>");
             printf("<link rel=\"stylesheet\" href=\"../style.css\">");
         printf("</head>");
-        printf("<body class=\"prox%d\">", player); // Para o CSS "saber" quem vai jogar e mudar o fundo do placar, aplica-se a classe (prox1 / prox2) � tag body e utiliza-se o seletor ("body.prox1 > a > div#placar > div#o" / "body.prox2 > a > div#placar > div#x")
-            printf("<a href=\"?\">"); // Ao utilizar um link sem definir nenhum endere�o, ele reabrir� o mesmo arquivo. Ao colocar "?", ele abre o mesmo arquivo sem nenhum par�metro de URL
+        printf("<body class=\"prox%d\">", player);
+            printf("<a href=\"?\">");
                 printf("<div id=\"placar\">");
                     printf("<div id=\"o\">");
                         printf("<span>O</span>");
                         printf("<br>");
+                        printf("<span>%d</span>", score[0]);
                     printf("</div>");
                     printf("<div id=\"x\">");
                         printf("<span>X</span>");
                         printf("<br>");
+                        printf("<span>%d</span>", score[1]);
                     printf("</div>");
                 printf("</div>");
             printf("</a>");
             printf("<div id=\"jogo\">");
-                /*
-                    Utiliza-se links para reabrir o arquivo e passando por par�metro
-                    qual � o bloco a ser aplicado e de quem � a jogada. As classes
-                    "cell0", "cell1" e "cell2" servem para o CSS exibir uma imagem
-                    no fundo do bloco de quem fez a jogada naquele bloco.
-                */
-                j = 0;
-                while(j < 9){
-
+                for(j=0; j<9; j++){
                     printf("<a");
-                    if (tabuleiro[j] == 0) printf(" href=\"?bloco=%d&proxJogada=%d\"", j+1, player); // Se ningu�m tiver jogado, insere a refer�ncia de quais s�o os par�metros para efetivar a jogada naquele bloco
+                    if (tabuleiro[j] == 0)
+                        printf(" href=\"?bloco=%d&proxJogada=%d\"", j+1, player);
                     printf(">");
-                    printf("<div class=\"cell%d\"></div>", tabuleiro[j]); // Imprime 0 se ningu�m tiver jogado, 1 se a jogada for O e 2 se for X
+                        printf("<div class=\"cell%d\"></div>", tabuleiro[j]);
                     printf("</a>");
-                    j += 1;
                 }
             printf("</div>");
             printf("<div id=\"log\">%s</div>", resposta);
@@ -211,7 +226,7 @@ void cria_arquivo(){
     //ARQUIVO QUE SERÁ CRIADO
     FILE *arquivo;
 
-    arquivo = fopen("JogoDaVelha.txt", "w+b");
+    arquivo = fopen("JogoDaVelha.bin", "w+b");
     fclose(arquivo);
 }
 
@@ -222,12 +237,12 @@ void cria_arquivo(){
  *      - int casas = Número de casas do tabuleiro
  *      - int vetor[casas] = Vetor já criado com o tamanho exato
  */
-void preenche_tabuleiro(int casas, int vetor[casas]){
+void preenche(int casas, int vetor[casas]){
     //CONTADORES
     int i = 0;
 
     //PREENCHE O TABULEIRO
-    while(i < 9) {
+    while(i < casas) {
         vetor[i] = 0;
         i += 1;
     }
