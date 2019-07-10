@@ -64,6 +64,7 @@ int main() {
         if(arquivo == NULL)
             snprintf(resposta, sizeof resposta, "Erro ao criar o arquivo!");
         else {
+            snprintf(resposta, sizeof resposta, "INÍCIO");
             fwrite(score, 2, sizeof(int), arquivo);
             fwrite(&round, 1, sizeof(int), arquivo);
             fwrite(tabuleiro, 9, sizeof(int), arquivo);
@@ -88,7 +89,7 @@ int main() {
         if(dados == NULL)
             snprintf(resposta, sizeof resposta, "Erro na leitura da URL");
         else if(sscanf(dados, "casa=%d&round=%d", &casa, &round) != 2){
-            snprintf(resposta, sizeof resposta, "Placar ZERADO!");
+            snprintf(resposta, sizeof resposta, "INÍCIO");
             score[0] = 0;
             score[1] = 0;
             fseek(arquivo, 0, SEEK_SET);
@@ -103,7 +104,7 @@ int main() {
                 player = 2;
 
             //GRAVA O JOGADOR DA RODADA NO ARQUIVO
-            fseek(arquivo, 0, SEEK_SET);
+            fseek(arquivo, 2* sizeof(int), SEEK_SET);
             fwrite(&player, 1, sizeof(int), arquivo);
             fflush(arquivo);
 
@@ -113,7 +114,7 @@ int main() {
             if(casa > 9)
                 casa = 9;
 
-            //GRAVA O JOGADOR DA PRÓXIMA RODADA
+            //GRAVA A RODADA NO ARQUIVO
             fseek(arquivo, (2+casa)* sizeof(int), SEEK_SET);
             fwrite(&round, 1, sizeof(int), arquivo);
             fflush(arquivo);
