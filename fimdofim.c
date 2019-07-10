@@ -198,12 +198,16 @@ int main() {
         printf("</head>");
         printf("<body class=\"prox%d\">", player);
             printf("<a href=\"?\">");
-                printf("<div id=\"placar\">");
+                printf("<div id=\"score\">");
                     printf("<div id=\"o\">");
                         printf("<span>O</span>");
                         printf("<br>");
                         printf("<span>%d</span>", score[0]);
                     printf("</div>");
+                    printf("<div id=\"texto\">");
+                        printf("<h1> TITULOOOOOO </h1>");
+                    printf("</div");
+
                     printf("<div id=\"x\">");
                         printf("<span>X</span>");
                         printf("<br>");
