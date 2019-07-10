@@ -58,11 +58,17 @@ int main() {
     if(arquivo == NULL) {
         //CRIA O ARQUIVO E O PREENCHE COM AS INFORMAÇÕES DE JOGADA E COM O TABULEIRO
         cria_arquivo();
-        arquivo = fopen("JogoDaVelha.bin", "w+b");
+        arquivo = fopen("JogoDaVelha.bin", "r+b");
 
-        fwrite(score, 2, sizeof(int), arquivo);
-        fwrite(&round, 1, sizeof(int), arquivo);
-        fwrite(tabuleiro, 9, sizeof(int), arquivo);
+        //SE O ARQUIVO NÃO PUDER SER CRIADO
+        if(arquivo == NULL)
+            snprintf(resposta, sizeof resposta, "Erro ao criar o arquivo!");
+        else {
+            fwrite(score, 2, sizeof(int), arquivo);
+            fwrite(&round, 1, sizeof(int), arquivo);
+            fwrite(tabuleiro, 9, sizeof(int), arquivo);
+            fflush(arquivo);
+        }
     }
     else{
         //SE O ARQUIVO JÁ EXISTIR, APENAS LÊ AS INFORMAÇÕES DO JOGO ATUAL UTILIZA FSEEKS PARA ASEGURAR A LOCALIZAÇÃO DO DADO
@@ -81,12 +87,13 @@ int main() {
         //RELATA SE HOUVER ALGUM ERRO
         if(dados == NULL)
             snprintf(resposta, sizeof resposta, "Erro na leitura da URL");
-        if(sscanf(dados, "casa=%d&round=%d", &casa, &round) != 2){
-            snprintf(resposta, sizeof resposta, "Zerou!!");
+        else if(sscanf(dados, "casa=%d&round=%d", &casa, &round) != 2){
+            snprintf(resposta, sizeof resposta, "Placar ZERADO!");
             score[0] = 0;
             score[1] = 0;
             fseek(arquivo, 0, SEEK_SET);
             fwrite(score, 2, sizeof(int), arquivo);
+            fflush(arquivo);
         }
         else{
             //LÊ QUAL É O JOGADOR DA RODADA E JÁ FAZ A ALTERAÇÃO PARA A PRÓXIMA
@@ -98,6 +105,7 @@ int main() {
             //GRAVA O JOGADOR DA RODADA NO ARQUIVO
             fseek(arquivo, 0, SEEK_SET);
             fwrite(&player, 1, sizeof(int), arquivo);
+            fflush(arquivo);
 
             //PREVINE ERROS, SE O PARÂMETRO VIER INVÁLIDO NA URL
             if(casa < 1)
@@ -108,6 +116,7 @@ int main() {
             //GRAVA O JOGADOR DA PRÓXIMA RODADA
             fseek(arquivo, (2+casa)* sizeof(int), SEEK_SET);
             fwrite(&round, 1, sizeof(int), arquivo);
+            fflush(arquivo);
 
             //ATUALIZA O TABULEIRO COM A JOGADA FEITA
             fseek(arquivo, (2+casa)* sizeof(int), SEEK_SET);
@@ -162,6 +171,7 @@ int main() {
 
             fseek(arquivo, 0, SEEK_SET);
             fwrite(score, 2, sizeof(int), arquivo);
+            fflush(arquivo);
         }
 
         //ZERA O TABULEIRO PARA A PROXIMA PARTIDA
@@ -171,9 +181,10 @@ int main() {
             i += 1;
         }
 
-        //PASSA O TABULEIRO ZRADO PARA O ARQUIVO
-        fseek(arquivo, sizeof(int), SEEK_SET);
+        //PASSA O TABULEIRO ZERADO PARA O ARQUIVO
+        fseek(arquivo, 3*sizeof(int), SEEK_SET);
         fwrite(tabuleiro, 9, sizeof(int), arquivo);
+        fflush(arquivo);
     }
 
     //IMPRIMINDO OS RESULTADOS EM HTML
@@ -203,7 +214,7 @@ int main() {
                 for(j=0; j<9; j++){
                     printf("<a");
                     if (tabuleiro[j] == 0)
-                        printf(" href=\"?bloco=%d&proxJogada=%d\"", j+1, player);
+                        printf(" href=\"?casa=%d&round=%d\"", j + 1, player);
                     printf(">");
                         printf("<div class=\"cell%d\"></div>", tabuleiro[j]);
                     printf("</a>");
