@@ -193,7 +193,7 @@ int main() {
     printf("<html>");
         printf("<head>");
             printf("<meta charset=\"utf-8\">");
-            printf("<title>Jogo da velha</title>");
+            printf("<title>O Mundial Perdido</title>");
             printf("<link rel=\"stylesheet\" href=\"../style.css\">");
         printf("</head>");
         printf("<body class=\"prox%d\">", player);
